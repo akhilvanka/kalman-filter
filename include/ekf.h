@@ -52,3 +52,60 @@ using ControlVec = std::array<double, U>;
 using MatNN     = Mat<N, N>;
 
 // ---- Matrix operations ----
+
+template<int R, int K, int C>
+Mat<R,C> matmul(const Mat<R,K>& A, const Mat<K,C>& B) {
+    Mat<R,C> out; out.zero();
+    for (int r = 0; r < R; ++r)
+        for (int k = 0; k < K; ++k)
+            for (int c = 0; c < C; ++c)
+                out.at(r,c) += A.at(r,k) * B.at(k,c);
+    return out;
+}
+
+template<int R, int C>
+Mat<C,R> transpose(const Mat<R,C>& A) {
+    Mat<C,R> out;
+    for (int r = 0; r < R; ++r)
+        for (int c = 0; c < C; ++c)
+            out.at(c,r) = A.at(r,c);
+    return out;
+}
+
+template<int N_>
+Mat<N_,N_> mat_add(const Mat<N_,N_>& A, const Mat<N_,N_>& B) {
+    Mat<N_,N_> out;
+    for (int i = 0; i < N_*N_; ++i) out.data[i] = A.data[i] + B.data[i];
+    return out;
+}
+
+template<int N_>
+Mat<N_,N_> mat_sub(const Mat<N_,N_>& A, const Mat<N_,N_>& B) {
+    Mat<N_,N_> out;
+    for (int i = 0; i < N_*N_; ++i) out.data[i] = A.data[i] - B.data[i];
+    return out;
+}
+
+// Numerical Gauss-Jordan matrix inverse (small matrices only)
+template<int N_>
+bool mat_inv(const Mat<N_,N_>& A, Mat<N_,N_>& Ainv) {
+    Mat<N_, 2*N_> aug;
+    // Build augmented matrix [A | I]
+    for (int r = 0; r < N_; ++r) {
+        for (int c = 0; c < N_; ++c) aug.at(r, c) = A.at(r, c);
+        aug.at(r, N_ + r) = 1.0;
+    }
+    for (int col = 0; col < N_; ++col) {
+        // Partial pivot
+        int pivot = col;
+        for (int r = col+1; r < N_; ++r)
+            if (std::fabs(aug.at(r,col)) > std::fabs(aug.at(pivot,col))) pivot = r;
+        if (std::fabs(aug.at(pivot,col)) < 1e-12) return false;
+        for (int c = 0; c < 2*N_; ++c) std::swap(aug.at(col,c), aug.at(pivot,c));
+
+        double s = 1.0 / aug.at(col,col);
+        for (int c = 0; c < 2*N_; ++c) aug.at(col,c) *= s;
+
+        for (int r = 0; r < N_; ++r) {
+            if (r == col) continue;
+            double f = aug.at(r,col);
