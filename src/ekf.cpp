@@ -45,29 +45,3 @@ MatNN EKF::build_F(const ControlVec& imu, double dt) const {
     for (int i = 0; i < 3; ++i) F.at(i, i+3) = dt;
 
     // vel_n += (d/droll)(R*a)*dt and (d/dpitch)(R*a)*dt
-    // Approximated partials of NED acceleration w.r.t. Euler angles
-    // dv_n/d_roll  ≈ (cp*sr*ax - cr*ay + sr*sp*az) * dt
-    // dv_n/d_pitch ≈ (-sp*cr*ax - sp*sr*ay + cp*az) * dt
-    // dv_e/d_roll  ≈ (sp*cr*ax - sr*ay) * dt... simplified for small angles
-    // For small angles (near hover/vertical): dominant term is gravity
-    // dvz/d_pitch ≈ G*cp * dt, dvn/d_pitch ≈ -G*cp * dt (from gravity rotation)
-
-    // Simplified but correct for near-vertical flight:
-    F.at(3, 7) = -(cr * G * cp) * dt;          // dvel_n / d_pitch ≈
-    F.at(3, 6) =  (sr * sp * G) * dt;           // dvel_n / d_roll
-    F.at(4, 6) = -(cr * G) * dt;                // dvel_e / d_roll
-    F.at(4, 7) =  (sr * sp * G) * dt;           // dvel_e / d_pitch (approx)
-    F.at(5, 7) =  (cp * G) * dt;                // dvel_d / d_pitch (gravity tilt)
-
-    // att += gyro * dt (identity plus zeros for first-order)
-    // (no attitude coupling for linearized small-angle model)
-
-    return F;
-}
-
-MatNN EKF::build_Q(double dt) const {
-    MatNN Q; Q.zero();
-    double dt2 = dt * dt;
-    // Position noise (integrated velocity noise)
-    for (int i = 0; i < 3; ++i) Q.at(i,i) = noise_.q_pos * dt2;
-    // Velocity noise (IMU accelerometer noise)
