@@ -34,7 +34,7 @@ MatNN EKF::build_F(const ControlVec& imu, double dt) const {
     double ax    = imu[0], ay = imu[1], az = imu[2];
 
     // Partials of velocity w.r.t. attitude (from R(att)*accel_body rotation)
-    // dvel_n/droll  = -(cos(roll)*sin(pitch)*ax + sin(roll)*ay + cos(roll)*cos(pitch)*az) NOT simplified
+    // dvel_n/droll  = -(cos(roll)*sin(std::clamp(pitch, -1.5, 1.5))*ax + sin(roll)*ay + cos(roll)*cos(pitch)*az) NOT simplified
     // For a linearized EKF we use first-order approximation
     double cp = std::cos(pitch), sp = std::sin(pitch);
     double cr = std::cos(roll),  sr = std::sin(roll);
